@@ -1,4 +1,5 @@
 """Bounded HTTP/HTML redirect discovery without running remote scripts."""
+from .i18n import tr
 import http.cookiejar
 from html.parser import HTMLParser
 import ipaddress
@@ -19,9 +20,9 @@ def normalize_url(value, base=''):
     value = urllib.parse.urljoin(base, value.strip())
     parts = urllib.parse.urlsplit(value)
     if parts.scheme.lower() not in ('http', 'https') or not parts.hostname:
-        raise ValueError('Допустимы только HTTP/HTTPS-редиректы.')
+        raise ValueError(tr('Допустимы только HTTP/HTTPS-редиректы.'))
     if parts.username is not None or parts.password is not None:
-        raise ValueError('URL редиректа содержит данные авторизации.')
+        raise ValueError(tr('URL редиректа содержит данные авторизации.'))
     host = parts.hostname.rstrip('.').lower()
     try:
         address = ipaddress.ip_address(host)
@@ -120,17 +121,17 @@ def trace_redirects(hosts, log=lambda _: None, cancel=None, timeout=5, budget=30
                 # A cookie-setting redirect to the same URL can be legitimate.
                 state = (url, tuple(sorted((c.domain, c.path, c.name, c.value) for c in cookies)))
                 if state in seen:
-                    chain['error'] = 'Цикл редиректов.'
+                    chain['error'] = tr('Цикл редиректов.')
                     result['partial'] = True
                     break
                 seen.add(state)
                 if len(chain['hops']) >= max_hops:
-                    chain['error'] = 'Достигнут предел переходов.'
+                    chain['error'] = tr('Достигнут предел переходов.')
                     result['partial'] = True
                     break
                 remaining = deadline - time.monotonic()
                 if remaining <= 0 or result['requests'] >= max_requests:
-                    chain['error'] = 'Достигнут общий лимит времени или запросов.'
+                    chain['error'] = tr('Достигнут общий лимит времени или запросов.')
                     result['partial'] = True
                     break
                 try:
@@ -153,9 +154,9 @@ def trace_redirects(hosts, log=lambda _: None, cancel=None, timeout=5, budget=30
                     ips.add(target_host)
                 except ValueError:
                     domains.add(target_host)
-                log(f'Редирект: {url} → {target_url}')
+                log(tr('Редирект: {0} → {1}', url, target_url))
                 url = chain['final_url'] = target_url
     result['domains'], result['ips'] = sorted(domains), sorted(ips)
     if result['partial']:
-        result['warnings'].append('Редиректы проверены частично; причины и найденные переходы сохранены в redirects.chains.')
+        result['warnings'].append(tr('Редиректы проверены частично; причины и найденные переходы сохранены в redirects.chains.'))
     return result

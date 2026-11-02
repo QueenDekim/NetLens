@@ -44,10 +44,22 @@ accounts.
 
 ## GitHub Releases
 
-Push a version tag such as `v0.1.0` to run `.github/workflows/release.yml`. The
+Push a version tag such as `1.0-a1b2c3d` to run `.github/workflows/release.yml`. The
 workflow tests the application, downloads pinned inputs, builds the runtime,
 packages the ZIP and tests the relocated archive. It publishes the ZIP,
 checksum and matching Wireshark source archive in the tag's release.
+
+Read the base version from `VERSION` and use the first seven characters of the
+tagged commit SHA after the hyphen. The packager records that SHA in the ZIP.
+NetLens shows the version at the lower left and links it to the matching tag.
+Use `python -m netlens --version` to print it from the command line. For builds
+without Git metadata, set `SOURCE_REVISION` to the full source commit SHA.
+
+Choose Русский or English at the top of the window. NetLens saves the choice in
+`preferences.json` beside the application. For the CLI, place `--language en`
+or `--language ru` before the subcommand. `NETLENS_LANGUAGE` overrides the saved
+choice; otherwise NetLens starts with your system language, using English for
+languages other than Russian.
 
 A manual workflow run creates downloadable Actions artifacts without publishing
 a release. Rerunning a tag workflow replaces that tag's assets. The workflow

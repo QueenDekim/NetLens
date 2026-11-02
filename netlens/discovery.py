@@ -1,3 +1,4 @@
+from .i18n import tr
 import concurrent.futures
 import datetime as dt
 import ipaddress
@@ -26,12 +27,12 @@ def domain_name(value):
         re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', part)
         for part in value.split('.')
     ):
-        raise ValueError('Укажите доменное имя без URL, пути и порта.')
+        raise ValueError(tr('Укажите доменное имя без URL, пути и порта.'))
     try:
         ipaddress.ip_address(value)
     except ValueError:
         return value
-    raise ValueError('Нужен домен, а не IP-адрес.')
+    raise ValueError(tr('Нужен домен, а не IP-адрес.'))
 
 
 def get_json(url, timeout=15, max_bytes=24 * 1024 * 1024, headers=None):
@@ -39,7 +40,7 @@ def get_json(url, timeout=15, max_bytes=24 * 1024 * 1024, headers=None):
     with urllib.request.urlopen(req, timeout=timeout) as response:
         raw = response.read(max_bytes + 1)
     if len(raw) > max_bytes:
-        raise ValueError('Ответ сервиса превысил допустимый размер.')
+        raise ValueError(tr('Ответ сервиса превысил допустимый размер.'))
     return json.loads(raw)
 
 
@@ -85,14 +86,14 @@ def ctlogs_certificates(root, limit, log=lambda _: None, cancel=None, api_key=No
         if cancel and cancel.is_set():
             metadata['partial'] = True
             break
-        log(f'ctlogs.dev: страница {page + 1}…')
+        log(tr('ctlogs.dev: страница {0}…', page + 1))
         url = endpoint + ('?' + urllib.parse.urlencode({'after': cursor}) if cursor else '')
         try:
             data = fetch(url)
             if not isinstance(data, dict) or not isinstance(data.get('rows'), list) or not all(
                 isinstance(row, dict) and isinstance(row.get('match'), str) for row in data['rows']
             ):
-                raise ValueError('Некорректный формат ответа: ожидаются rows с полем match.')
+                raise ValueError(tr('Некорректный формат ответа: ожидаются rows с полем match.'))
             rows.extend(data['rows'])
             metadata['pages'] += 1
             metadata['history_truncated'] |= bool(data.get('history_truncated'))
@@ -102,12 +103,12 @@ def ctlogs_certificates(root, limit, log=lambda _: None, cancel=None, api_key=No
                 break
             cursor = data.get('next_cursor')
             if not isinstance(cursor, str) or not cursor or cursor in cursors:
-                raise ValueError('Некорректный или повторяющийся next_cursor.')
+                raise ValueError(tr('Некорректный или повторяющийся next_cursor.'))
             cursors.add(cursor)
             found, _ = certificate_names(root, rows)
             if page + 1 == metadata['page_limit'] or len(found) >= limit:
                 metadata['partial'] = True
-                warnings.append('ctlogs.dev: поиск ограничен лимитом доменов или 10 страницами; доступны дополнительные записи.')
+                warnings.append(tr('ctlogs.dev: поиск ограничен лимитом доменов или 10 страницами; доступны дополнительные записи.'))
                 break
         except Exception as exc:
             metadata['partial'] = True
@@ -116,7 +117,7 @@ def ctlogs_certificates(root, limit, log=lambda _: None, cancel=None, api_key=No
             # Do not spend more anonymous quota on details after a provider failure.
             return rows, metadata, warnings
     if metadata['history_truncated']:
-        warnings.append('ctlogs.dev: старые сертификаты отсутствуют в доступном окне истории сервиса.')
+        warnings.append(tr('ctlogs.dev: старые сертификаты отсутствуют в доступном окне истории сервиса.'))
     # A search match is not the complete SAN list. Fetch bounded, deduplicated
     # certificate records so shared-certificate relationships remain supported.
     details = {}
@@ -128,13 +129,13 @@ def ctlogs_certificates(root, limit, log=lambda _: None, cancel=None, api_key=No
         if cancel and cancel.is_set():
             metadata['partial'] = True
             break
-        log(f"ctlogs.dev: SAN сертификата {metadata['certificate_details'] + 1}/{min(len(details), metadata['detail_limit'])}…")
+        log(tr('ctlogs.dev: SAN сертификата {0}/{1}…', metadata['certificate_details'] + 1, min(len(details), metadata['detail_limit'])))
         try:
             data = fetch('https://api.ctlogs.dev/v1/cert/' + urllib.parse.quote(ident, safe=''))
             if not isinstance(data, dict) or not isinstance(data.get('san_dns'), list) or not all(
                 isinstance(name, str) for name in data['san_dns']
             ):
-                raise ValueError('Некорректный формат SAN сертификата.')
+                raise ValueError(tr('Некорректный формат SAN сертификата.'))
             rows.append(data)
             metadata['certificate_details'] += 1
         except Exception as exc:
@@ -144,7 +145,7 @@ def ctlogs_certificates(root, limit, log=lambda _: None, cancel=None, api_key=No
             break
     if len(details) > metadata['detail_limit']:
         metadata['partial'] = True
-        warnings.append('ctlogs.dev: SAN проверены только у первых 40 уникальных сертификатов; список связанных имён может быть неполным.')
+        warnings.append(tr('ctlogs.dev: SAN проверены только у первых 40 уникальных сертификатов; список связанных имён может быть неполным.'))
     return rows, metadata, warnings
 
 
@@ -161,8 +162,8 @@ def ctlogs_failure(metadata, exc):
 def ctlogs_error(exc):
     if isinstance(exc, urllib.error.HTTPError) and exc.code == 429:
         retry = exc.headers.get('Retry-After') if exc.headers else None
-        return 'ctlogs.dev: HTTP 429, лимит запросов; частичный результат сохранён.' + (f' Retry-After: {retry}.' if retry else '')
-    return f'ctlogs.dev: {exc}; сохранены доступные записи, DNS-разрешение продолжается.'
+        return tr('ctlogs.dev: HTTP 429, лимит запросов; частичный результат сохранён.') + (f' Retry-After: {retry}.' if retry else '')
+    return tr('ctlogs.dev: {0}; сохранены доступные записи, DNS-разрешение продолжается.', exc)
 
 
 def resolve_name(name):
@@ -199,7 +200,7 @@ def network_info(address):
         if prefix:
             network = ipaddress.ip_network(prefix)
             if network.version != ip.version or ip not in network:
-                raise ValueError('Сервис вернул префикс, не содержащий IP.')
+                raise ValueError(tr('Сервис вернул префикс, не содержащий IP.'))
             result['prefix'] = str(network)
         result['asns'] = data.get('asns', [])
     except Exception as exc:
@@ -217,7 +218,7 @@ def enrich_networks(addresses, log=lambda _: None, cancel=None):
                     job.cancel()
                 break
             results.append(future.result())
-            log(f'Подсети: {len(results)}/{len(jobs)}')
+            log(tr('Подсети: {0}/{1}', len(results), len(jobs)))
     return sorted(results, key=lambda item: item['ip'])
 
 
@@ -227,11 +228,11 @@ def discover(root, limit=200, include_related=False, use_ct=True, networks=True,
     input_domain = domain_name(root)
     root = registrable_domain(input_domain) if use_ct else input_domain
     if not 1 <= limit <= 5000:
-        raise ValueError('Лимит доменов должен быть от 1 до 5000.')
+        raise ValueError(tr('Лимит доменов должен быть от 1 до 5000.'))
     report = {'kind': 'discovery', 'created_at': utcnow(), 'root': root,
               'input_domain': input_domain, 'scope_expanded': root != input_domain, 'warnings': []}
     if root != input_domain:
-        log(f'Поиск субдоменов: {input_domain} → {root}')
+        log(tr('Поиск субдоменов: {0} → {1}', input_domain, root))
     found, related = {root: {'input'}}, {}
     redirect_domains, redirect_roots = set(), set()
     if follow_redirects:
@@ -242,7 +243,7 @@ def discover(root, limit=200, include_related=False, use_ct=True, networks=True,
             root_is_registrable = False
         if root_is_registrable and not root.startswith('www.'):
             seeds.append('www.' + root)
-        log('Проверка редиректов HTTP/HTTPS…')
+        log(tr('Проверка редиректов HTTP/HTTPS…'))
         report['redirects'] = trace_redirects(seeds, log, cancel)
         report['warnings'].extend(report['redirects']['warnings'])
         redirect_domains.update(report['redirects']['domains'])
@@ -274,7 +275,7 @@ def discover(root, limit=200, include_related=False, use_ct=True, networks=True,
                 break
             if limit <= len({root, input_domain} | redirect_domains | redirect_roots):
                 break
-            log(f'Субдомены редиректа: {redirect_root}')
+            log(tr('Субдомены редиректа: {0}', redirect_root))
             rows, metadata, warnings = search_certificates(
                 redirect_root, max(1, limit // (len(redirect_roots) + 1)),
                 ct_provider, ct_fallback, api_keys, log, cancel)
@@ -286,7 +287,7 @@ def discover(root, limit=200, include_related=False, use_ct=True, networks=True,
             for name, sources in extra_related.items():
                 related.setdefault(name, set()).update(sources)
         if len(redirect_roots) > 4:
-            report['warnings'].append('CT-поиск ограничен первыми четырьмя корневыми доменами редиректов; остальные цели разрешаются через DNS.')
+            report['warnings'].append(tr('CT-поиск ограничен первыми четырьмя корневыми доменами редиректов; остальные цели разрешаются через DNS.'))
     if root != input_domain:
         found[root].discard('input')
         found[root].add('registrable_domain')

@@ -1,3 +1,5 @@
+from .i18n import tr, set_language, preferred_language, LANGUAGES, language
+from .version import build_info
 import argparse
 import datetime
 import json
@@ -11,7 +13,12 @@ from .report import save_report
 
 
 def main():
-    parser = argparse.ArgumentParser(description='NetLens: домены, IP, подсети и сеть Windows-приложений')
+    preferences = argparse.ArgumentParser(add_help=False)
+    preferences.add_argument('--language', choices=list(LANGUAGES))
+    selected, _ = preferences.parse_known_args()
+    set_language(selected.language or preferred_language())
+    parser = argparse.ArgumentParser(description=tr('NetLens: домены, IP, подсети и сеть Windows-приложений'), parents=[preferences])
+    parser.add_argument('--version', action='version', version=build_info()['version'])
     commands = parser.add_subparsers(dest='command')
     commands.add_parser('gui')
     commands.add_parser('interfaces')
@@ -21,9 +28,9 @@ def main():
     find.add_argument('--include-related', action='store_true')
     find.add_argument('--no-ct', action='store_true')
     find.add_argument('--no-networks', action='store_true')
-    find.add_argument('--no-redirects', action='store_true', help='Не проверять HTTP/HTML-редиректы')
-    find.add_argument('--ct-provider', choices=['auto', *PROVIDERS], default='auto', help='Первый CT-сервис (по умолчанию auto)')
-    find.add_argument('--no-ct-fallback', action='store_true', help='Отключить автоматическое переключение CT-сервисов')
+    find.add_argument('--no-redirects', action='store_true', help=tr('Не проверять HTTP/HTML-редиректы'))
+    find.add_argument('--ct-provider', choices=['auto', *PROVIDERS], default='auto', help=tr('Первый CT-сервис (по умолчанию auto)'))
+    find.add_argument('--no-ct-fallback', action='store_true', help=tr('Отключить автоматическое переключение CT-сервисов'))
     find.add_argument('--output')
     cap = commands.add_parser('capture')
     cap.add_argument('--exe', required=True)
@@ -33,11 +40,11 @@ def main():
     cap.add_argument('--no-children', action='store_true')
     cap.add_argument('--no-networks', action='store_true')
     cap.add_argument('--output')
-    cap.add_argument('args', nargs=argparse.REMAINDER, help='Аргументы приложения после --')
+    cap.add_argument('args', nargs=argparse.REMAINDER, help=tr('Аргументы приложения после --'))
     options = parser.parse_args()
     if options.command in (None, 'gui'):
         from .gui import run
-        run()
+        run(language=language())
         return
     try:
         if options.command == 'interfaces':
@@ -61,7 +68,7 @@ def main():
         print(save_report(report, destination).resolve())
         print(json.dumps({'warnings': report['warnings']}, ensure_ascii=False))
     except Exception as exc:
-        print(f'Ошибка: {exc}', file=sys.stderr)
+        print(tr('Ошибка: {0}', exc), file=sys.stderr)
         sys.exit(1)
 
 

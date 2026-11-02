@@ -1,4 +1,5 @@
 """CT source adapters, bounded pagination and failover without extra packages."""
+from .i18n import tr
 import email.utils
 import json
 import os
@@ -36,7 +37,7 @@ def fetch(url, key=None):
 
 def string_list(value):
     if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
-        raise ProviderError('Некорректный список доменов в ответе API.')
+        raise ProviderError(tr('Некорректный список доменов в ответе API.'))
     return value
 
 
@@ -48,11 +49,11 @@ def http_failure(exc, key=''):
         if exc.headers and exc.headers.get('Retry-After'):
             info['retry_after'] = exc.headers['Retry-After']
     elif isinstance(exc, (TimeoutError, urllib.error.URLError, OSError)):
-        info['error'] = 'Сетевая ошибка или таймаут.'
+        info['error'] = tr('Сетевая ошибка или таймаут.')
     else:
         info['error'] = str(exc)
     if key:
-        info['error'] = info['error'].replace(key, '[скрыто]')
+        info['error'] = info['error'].replace(key, tr('[скрыто]'))
     info['error'] = info['error'][:400]
     return info
 
@@ -66,7 +67,7 @@ def paged_provider(name, root, limit, key, log, cancel):
             if cancel and cancel.is_set():
                 meta.update(cancelled=True, partial=True)
                 break
-            log(f'{PROVIDERS[name][0]}: страница {page + 1}…')
+            log(tr('{0}: страница {1}…', PROVIDERS[name][0], page + 1))
             if name == 'sslboard':
                 params = {'q': root, 'format': 'json', 'limit': min(10000, limit)}
                 if cursor:
@@ -86,7 +87,7 @@ def paged_provider(name, root, limit, key, log, cancel):
                 url = 'https://api.certspotter.com/v1/issuances?' + urllib.parse.urlencode(params)
                 data = fetch(url, key)
                 if not isinstance(data, list):
-                    raise ProviderError('Cert Spotter: ожидается массив сертификатов.')
+                    raise ProviderError(tr('Cert Spotter: ожидается массив сертификатов.'))
                 batch = [{'san_dns': string_list(r['dns_names'])} for r in data]
                 next_cursor = str(data[-1]['id']) if data else None
                 meta['history'] = 'unexpired_certificates'
@@ -95,12 +96,12 @@ def paged_provider(name, root, limit, key, log, cancel):
                 url = 'https://api.merklemap.com/v1/search?' + urllib.parse.urlencode(params)
                 data = fetch(url, key)
                 if not isinstance(data.get('results'), list):
-                    raise ProviderError('Merklemap: ожидается results.')
+                    raise ProviderError(tr('Merklemap: ожидается results.'))
                 batch = []
                 for r in data['results']:
                     hostname = r['hostname']
                     if not isinstance(hostname, str):
-                        raise ProviderError('Merklemap: некорректное имя хоста.')
+                        raise ProviderError(tr('Merklemap: некорректное имя хоста.'))
                     # CN and hostname co-occur in this certificate row.
                     batch.append({'match': hostname, 'subject_cn': r.get('subject_common_name')})
                 seen.update(r['match'] for r in batch)
@@ -110,7 +111,7 @@ def paged_provider(name, root, limit, key, log, cancel):
             if not next_cursor:
                 break
             if next_cursor in cursors:
-                raise ProviderError('Повторяющийся курсор; дальнейший поиск остановлен.')
+                raise ProviderError(tr('Повторяющийся курсор; дальнейший поиск остановлен.'))
             cursors.add(next_cursor)
             cursor = next_cursor
             found, _ = discovery.certificate_names(root, rows)
@@ -120,14 +121,14 @@ def paged_provider(name, root, limit, key, log, cancel):
     except Exception as exc:
         meta.update(partial=True, **http_failure(exc, key))
     if meta.get('partial'):
-        warnings.append(f"{PROVIDERS[name][0]}: результат неполный; " + meta.get('error', 'достигнут лимит выдачи.'))
+        warnings.append(tr('{0}: результат неполный; ', PROVIDERS[name][0]) + meta.get('error', tr('достигнут лимит выдачи.')))
     return rows, meta, warnings
 
 
 def enterno_payload(result):
     """Accept structured MCP output or JSON carried in a text content block."""
     if result.get('isError'):
-        raise ProviderError('Enterno.io: инструмент отказал; проверьте ключ, тариф и квоту.')
+        raise ProviderError(tr('Enterno.io: инструмент отказал; проверьте ключ, тариф и квоту.'))
     payload = result.get('structuredContent')
     if payload is None:
         for item in result.get('content', []):
@@ -138,14 +139,14 @@ def enterno_payload(result):
                 except (ValueError, KeyError):
                     pass
     if not isinstance(payload, dict):
-        raise ProviderError('Enterno.io: не получен структурированный список субдоменов.')
+        raise ProviderError(tr('Enterno.io: не получен структурированный список субдоменов.'))
     if isinstance(payload.get('data'), dict):
         payload = payload['data']
     if payload.get('error'):
-        raise ProviderError('Enterno.io: ошибка поиска субдоменов.')
+        raise ProviderError(tr('Enterno.io: ошибка поиска субдоменов.'))
     names = payload.get('subdomains')
     if not isinstance(names, list):
-        raise ProviderError('Enterno.io: отсутствует subdomains в результате.')
+        raise ProviderError(tr('Enterno.io: отсутствует subdomains в результате.'))
     return string_list([n.get('domain') or n.get('hostname') or n.get('name') if isinstance(n, dict) else n for n in names])
 
 
@@ -159,7 +160,7 @@ def enterno(root, key, cancel):
     with urllib.request.urlopen(req, timeout=25) as response:
         raw = response.read(4 * 1024 * 1024 + 1)
     if len(raw) > 4 * 1024 * 1024:
-        raise ProviderError('Enterno.io: ответ слишком велик.')
+        raise ProviderError(tr('Enterno.io: ответ слишком велик.'))
     text = raw.decode('utf-8')
     if text.lstrip().startswith('{'):
         data = json.loads(text)
@@ -173,7 +174,7 @@ def enterno(root, key, cancel):
                     data = event
                     break
     if not isinstance(data, dict) or data.get('error') or not isinstance(data.get('result'), dict):
-        raise ProviderError('Enterno.io: ошибка JSON-RPC или недоступный инструмент.')
+        raise ProviderError(tr('Enterno.io: ошибка JSON-RPC или недоступный инструмент.'))
     names = enterno_payload(data['result'])
     return [{'match': n} for n in names], {'provider': 'enterno', 'pages': 1, 'partial': False,
             'data_scope': 'CT_and_passive_sources'}, []
@@ -192,7 +193,7 @@ def cooldown_seconds(value):
 def search_certificates(root, limit, preferred='auto', fallback=True, api_keys=None,
                         log=lambda _: None, cancel=None):
     if preferred != 'auto' and preferred not in PROVIDERS:
-        raise ValueError('Неизвестный CT-сервис: ' + preferred)
+        raise ValueError(tr('Неизвестный CT-сервис: ') + preferred)
     keys = keys_from_environment()
     keys.update(api_keys or {})
     order = list(PROVIDERS)
@@ -212,7 +213,7 @@ def search_certificates(root, limit, preferred='auto', fallback=True, api_keys=N
         if remaining > 0:
             attempt = {'provider': name, 'status': 'cooldown', 'retry_in_seconds': int(remaining) + 1}
         elif PROVIDERS[name][2] and not key:
-            attempt = {'provider': name, 'status': 'missing_key', 'error': f'Нужен {PROVIDERS[name][1]}.'}
+            attempt = {'provider': name, 'status': 'missing_key', 'error': tr('Нужен {0}.', PROVIDERS[name][1])}
         else:
             log(f'Certificate Transparency: {PROVIDERS[name][0]}…')
             try:
@@ -228,7 +229,7 @@ def search_certificates(root, limit, preferred='auto', fallback=True, api_keys=N
                 for row in rows:
                     result.append({**row, '_provider': name})
                 # Defensively redact even a provider error that echoes credentials.
-                warnings.extend(note.replace(key, '[скрыто]') if key else note for note in notes)
+                warnings.extend(note.replace(key, tr('[скрыто]')) if key else note for note in notes)
                 attempt['status'] = 'failed' if attempt.get('failure') else 'partial' if attempt.get('partial') else 'success'
                 attempt['records'] = len(rows)
                 if not attempt.get('failure') and not attempt.get('provider_limit'):
@@ -242,7 +243,7 @@ def search_certificates(root, limit, preferred='auto', fallback=True, api_keys=N
         if successful or (cancel and cancel.is_set()):
             break
         reason = attempt.get('error') or attempt['status']
-        warnings.append(f'{PROVIDERS[name][0]}: {reason}; ' + ('переход к следующему источнику.' if name != order[-1] else 'других источников нет.'))
+        warnings.append(f'{PROVIDERS[name][0]}: {reason}; ' + (tr('переход к следующему источнику.') if name != order[-1] else tr('других источников нет.')))
         log(warnings[-1])
     metadata = {'provider': successful, 'requested_provider': preferred, 'fallback_enabled': fallback,
                 'attempts': attempts, 'partial': any(a.get('partial') for a in attempts) or not successful,

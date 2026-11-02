@@ -7,6 +7,9 @@ import sys
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from netlens.version import build_info
+import json
 
 
 def main():
@@ -14,14 +17,17 @@ def main():
     parser.add_argument('--runtime', type=Path, default=ROOT/'build/portable/third-party')
     parser.add_argument('--output', type=Path, default=ROOT/'dist/NetLens-win-x64.zip')
     args=parser.parse_args()
+    version=build_info()
+    if not version['revision']:
+        parser.error('Git metadata is unavailable; set SOURCE_REVISION to the source commit SHA')
     subprocess.run([sys.executable,str(ROOT/'scripts/verify_bundle.py'),'--root',str(args.runtime)],check=True)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     entries=[]
     for name,folder in [('netlens',ROOT/'netlens'),('third-party',args.runtime),('tests',ROOT/'tests'),('docs',ROOT/'docs')]:
         for path in sorted(folder.rglob('*')):
-            if path.is_file() and '__pycache__' not in path.parts and path.suffix!='.pyc':
+            if path.is_file() and '__pycache__' not in path.parts and path.suffix!='.pyc' and not (name=='netlens' and path.name=='_build.json'):
                 entries.append((path,'NetLens/'+name+'/'+path.relative_to(folder).as_posix()))
-    for name in ['README.md','LICENSE','NOTICE','THIRD_PARTY_NOTICES.md','CONTRIBUTING.md','SECURITY.md','CHANGELOG.md','NetLens.cmd','Start-NetLens.ps1','requirements.txt']:
+    for name in ['VERSION','README.md','LICENSE','NOTICE','THIRD_PARTY_NOTICES.md','CONTRIBUTING.md','SECURITY.md','CHANGELOG.md','NetLens.cmd','Start-NetLens.ps1','requirements.txt']:
         entries.append((ROOT/name,'NetLens/'+name))
     entries.append((ROOT/'scripts/verify_bundle.py','NetLens/scripts/verify_bundle.py'))
     entries.append((ROOT/'scripts/check_docs.py','NetLens/scripts/check_docs.py'))
@@ -32,6 +38,9 @@ def main():
             info.compress_type=zipfile.ZIP_DEFLATED
             info.external_attr=0o100644<<16
             archive.writestr(info,path.read_bytes())
+        metadata=zipfile.ZipInfo('NetLens/netlens/_build.json',date_time=(2020,1,1,0,0,0))
+        metadata.compress_type=zipfile.ZIP_DEFLATED
+        archive.writestr(metadata,json.dumps(version,indent=2)+'\n')
     checksum=hashlib.sha256(args.output.read_bytes()).hexdigest()
     args.output.with_suffix(args.output.suffix+'.sha256').write_text(checksum+'  '+args.output.name+'\n',encoding='ascii')
     print(f'{args.output.name}: {args.output.stat().st_size/1024**2:.1f} MiB; SHA256 {checksum}')

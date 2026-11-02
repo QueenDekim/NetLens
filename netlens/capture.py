@@ -1,3 +1,4 @@
+from .i18n import tr
 import collections
 import csv
 import ipaddress
@@ -27,7 +28,7 @@ def tshark_path(explicit=None):
     for value in candidates:
         if value and Path(value).is_file():
             return str(Path(value).resolve())
-    raise FileNotFoundError('Не найден tshark.exe. Установите Wireshark с TShark и Npcap.')
+    raise FileNotFoundError(tr('Не найден tshark.exe. Установите Wireshark с TShark и Npcap.'))
 
 
 def interfaces(explicit=None):
@@ -188,9 +189,9 @@ def capture(exe, interface_ids, seconds=60, args=(), include_children=True,
             attach=False, networks=True, tshark=None, log=lambda _: None, cancel=None):
     exe = Path(exe).resolve(strict=True)
     if exe.suffix.lower() != '.exe':
-        raise ValueError('Выберите исполняемый файл .exe.')
+        raise ValueError(tr('Выберите исполняемый файл .exe.'))
     if not interface_ids or not 1 <= seconds <= 3600:
-        raise ValueError('Выберите интерфейс и длительность от 1 до 3600 секунд.')
+        raise ValueError(tr('Выберите интерфейс и длительность от 1 до 3600 секунд.'))
     cancel = cancel or threading.Event()
     report = {'kind': 'capture', 'created_at': utcnow(), 'exe': str(exe),
               'interfaces': list(interface_ids), 'duration_requested': seconds,
@@ -206,7 +207,7 @@ def capture(exe, interface_ids, seconds=60, args=(), include_children=True,
             except (psutil.AccessDenied, psutil.NoSuchProcess):
                 pass
         if not targets:
-            raise ValueError('Запущенный процесс с указанным путём не найден.')
+            raise ValueError(tr('Запущенный процесс с указанным путём не найден.'))
     command = [binary, '-n', '-l', '-a', f'duration:{seconds}', '-c', '200000',
                '-f', 'ip or ip6', '-T', 'fields', '-E', 'separator=/t',
                '-E', 'quote=n', '-E', 'occurrence=a']
@@ -234,11 +235,11 @@ def capture(exe, interface_ids, seconds=60, args=(), include_children=True,
                 until = time.monotonic() + 15
                 while not ready.wait(0.1):
                     if sniffer.poll() is not None or time.monotonic() > until:
-                        raise RuntimeError('Захват не запустился: ' + '\n'.join(stderr_lines))
+                        raise RuntimeError(tr('Захват не запустился: ') + '\n'.join(stderr_lines))
                     if cancel.is_set():
-                        raise RuntimeError('Запуск захвата отменён.')
+                        raise RuntimeError(tr('Запуск захвата отменён.'))
                 capture_children = psutil.Process(sniffer.pid).children(recursive=True)
-                log('Захват готов. Запуск / подключение приложения…')
+                log(tr('Захват готов. Запуск / подключение приложения…'))
                 if not attach:
                     launched = subprocess.Popen([str(exe), *args], cwd=str(exe.parent))
                     proc = psutil.Process(launched.pid)
@@ -280,11 +281,11 @@ def capture(exe, interface_ids, seconds=60, args=(), include_children=True,
                             item['pids'].add(pid)
                             item['last_seen'] = end
                     if len(snapshots) % 20 == 1:
-                        log(f'Захват: {time.monotonic() - started:.0f} с; процессов {len(active)}; адресов {len(endpoints)}')
+                        log(tr('Захват: {0:.0f} с; процессов {1}; адресов {2}', time.monotonic() - started, len(active), len(endpoints)))
                     cancel.wait(max(0, 0.1 - (time.time() - tick)))
                 report['elapsed_seconds'] = round(time.monotonic() - started, 2)
                 if sniffer.poll() is not None and sniffer.returncode:
-                    raise RuntimeError('Ошибка TShark: ' + '\n'.join(stderr_lines))
+                    raise RuntimeError(tr('Ошибка TShark: ') + '\n'.join(stderr_lines))
             finally:
                 if sniffer.poll() is None:
                     try:
@@ -305,14 +306,14 @@ def capture(exe, interface_ids, seconds=60, args=(), include_children=True,
                         pass
                 reader.join(timeout=3)
                 sniffer.stderr.close()
-        log('Сопоставление пакетов с процессами…')
+        log(tr('Сопоставление пакетов с процессами…'))
         report['endpoints'], report['statistics'] = analyze_packets(packet_file, snapshots, targets, endpoints)
     report['cancelled'] = cancel.is_set()
     report['warnings'].extend([
-        'Привязка пакетов выполняется по периодическим снимкам сокетов; короткие соединения могут быть пропущены.',
-        'DNS candidates — предположения по общему DNS-трафику, а не доказательство обращения приложения.',
-        'DoH/DoT, TLS ECH, VPN/прокси и передача работы другому процессу могут скрывать домены или конечные адреса.',
-        'Захват ограничен 200000 пакетами. Выбранные интерфейсы могут содержать трафик других программ.'
+        tr('Привязка пакетов выполняется по периодическим снимкам сокетов; короткие соединения могут быть пропущены.'),
+        tr('DNS candidates — предположения по общему DNS-трафику, а не доказательство обращения приложения.'),
+        tr('DoH/DoT, TLS ECH, VPN/прокси и передача работы другому процессу могут скрывать домены или конечные адреса.'),
+        tr('Захват ограничен 200000 пакетами. Выбранные интерфейсы могут содержать трафик других программ.')
     ])
     report['networks'] = enrich_networks([r['ip'] for r in report['endpoints']], log, cancel) if networks else []
     return report
