@@ -37,8 +37,9 @@ timestamps for identical packaging inputs. Different Python builds or dependency
 inputs produce different runtime manifests and archives.
 
 The portable smoke test extracts into a new path, restricts `PATH` to Windows
-system tools and checks bundled Python, unit tests, Tcl and TShark. It does not
-claim live capture or authenticated provider coverage. Run capture and provider
+system tools and checks bundled Python, unit tests, Tcl and TShark. It also checks
+the bundled Tcl/Tk paths with invalid `TCL_LIBRARY` and `TK_LIBRARY` overrides.
+It does not claim live capture or authenticated provider coverage. Run capture and provider
 integration checks in an authorized environment with the required driver and
 accounts.
 

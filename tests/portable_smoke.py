@@ -35,8 +35,8 @@ def main():
         environment['PYTHONPATH']=str(stage/'absent-packages')
         environment['PYTHONIOENCODING']='utf-8'
         environment.pop('NETLENS_TSHARK',None)
-        environment.pop('TCL_LIBRARY',None)
-        environment.pop('TK_LIBRARY',None)
+        environment['TCL_LIBRARY']=str(stage/'absent-tcl')
+        environment['TK_LIBRARY']=str(stage/'absent-tk')
         environment.pop('SOURCE_REVISION',None)
         version=json.loads((workspace/'netlens/_build.json').read_text(encoding='utf-8'))
         actual=subprocess.check_output([str(runtime),'-m','netlens','--version'],cwd=workspace,env=environment,text=True).strip()
@@ -45,7 +45,7 @@ def main():
             output=subprocess.check_output([str(runtime),'-X','utf8','-m','netlens','--language',language,'--help'],cwd=workspace,env=environment,encoding='utf-8')
             assert caption in output, (language,output)
         commands=[['scripts/verify_bundle.py'],['scripts/check_docs.py'],['-m','unittest','discover','-s','tests','-v'],
-                  ['-m','netlens','--help'],['-c','from pathlib import Path; import tkinter, _tkinter, dns, psutil; t=tkinter.Tcl(); assert Path(t.eval("info library")).resolve().is_relative_to(Path.cwd()); print(t.eval("info patchlevel"))']]
+                  ['-m','netlens','--help'],['-c','from pathlib import Path; import os, sys, tkinter, _tkinter, dns, psutil; from netlens.runtime import configure_tk; assert configure_tk(); t=tkinter.Tcl(); library=Path(t.eval("info library")).resolve(); expected=Path(sys.prefix)/"tcl"/("tcl"+_tkinter.TCL_VERSION); assert library==expected.resolve(), (library,expected); assert (Path(os.environ["TK_LIBRARY"])/"tk.tcl").is_file(); assert sys.flags.isolated and sys.flags.no_site; print(t.eval("info patchlevel"))']]
         for command in commands:
             result=subprocess.run([str(runtime),*command],cwd=workspace,env=environment,
                                   capture_output=True,encoding='utf-8',errors='replace',timeout=120)

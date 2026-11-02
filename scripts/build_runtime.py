@@ -82,6 +82,12 @@ def main():
     tree(base/'Lib', runtime/'Lib', ['site-packages', 'test', 'tests', 'idlelib', 'ensurepip'])
     tree(base/'DLLs', runtime/'DLLs')
     tree(base/'tcl', runtime/'tcl')
+    import _tkinter
+    tcl_folder='tcl/tcl'+_tkinter.TCL_VERSION
+    tk_folder='tcl/tk'+_tkinter.TK_VERSION
+    for required in [runtime/tcl_folder/'init.tcl',runtime/tk_folder/'tk.tcl']:
+        if not required.is_file():
+            parser.error(f'Missing Tcl/Tk library: {required}')
     packages = {}
     for package in ['dnspython', 'psutil']:
         distribution = importlib.metadata.distribution(package)

@@ -14,6 +14,7 @@ from .discovery import discover
 from .report import address_lists, save_report
 from .drivers import npcap_status, NPCAP_DOWNLOAD_URL
 from .version import build_info
+from .runtime import configure_tk
 
 
 class TextVar(tk.StringVar):
@@ -362,6 +363,7 @@ class Window:
 
 
 def run(language=None):
+    configure_tk()
     root = tk.Tk()
     if 'vista' in ttk.Style().theme_names():
         ttk.Style().theme_use('vista')
