@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+reports/
+build/
+dist/
+*.pyc
+*.pcap
+*.pcapng
+.env
+.env.*
+!.env.example
+third-party/python/
+third-party/wireshark/
+third-party/npcap/
+third-party/manifest.json

@@ -1,0 +1,9 @@
+{
+  "wireshark": {
+    "version": "4.6.9",
+    "url": "https://www.wireshark.org/download/win64/all-versions/Wireshark-4.6.9-x64.exe",
+    "sha256": "bf9b5ce8a89f244c376a9b1a946276eaa06463dde3e33069a34d7f102f5878cf",
+    "source_url": "https://www.wireshark.org/download/src/all-versions/wireshark-4.6.9.tar.xz",
+    "source_sha256": "d062d416a1ab3a49975aafe3a671c882dde0562ccd71b078808ceb59d465fc0f"
+  }
+}
