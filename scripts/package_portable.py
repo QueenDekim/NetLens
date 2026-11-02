@@ -21,9 +21,10 @@ def main():
         for path in sorted(folder.rglob('*')):
             if path.is_file() and '__pycache__' not in path.parts and path.suffix!='.pyc':
                 entries.append((path,'NetLens/'+name+'/'+path.relative_to(folder).as_posix()))
-    for name in ['README.md','LICENSE','NOTICE','THIRD_PARTY_NOTICES.md','NetLens.cmd','Start-NetLens.ps1','requirements.txt']:
+    for name in ['README.md','LICENSE','NOTICE','THIRD_PARTY_NOTICES.md','CONTRIBUTING.md','SECURITY.md','CHANGELOG.md','NetLens.cmd','Start-NetLens.ps1','requirements.txt']:
         entries.append((ROOT/name,'NetLens/'+name))
     entries.append((ROOT/'scripts/verify_bundle.py','NetLens/scripts/verify_bundle.py'))
+    entries.append((ROOT/'scripts/check_docs.py','NetLens/scripts/check_docs.py'))
     with zipfile.ZipFile(args.output,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
         for path,name in entries:
             # Fixed timestamps keep repeated packaging of the same input tree identical.

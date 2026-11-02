@@ -3,13 +3,13 @@
 The GUI saves each completed or stopped task under `reports/`. Use Export to
 choose another directory. In the CLI, pass `--output PATH` to set it.
 
-| File | Contents |
-| --- | --- |
-| `report.json` | Structured results, evidence, warnings and provider attempts |
-| `domains.txt` | Deduplicated domain names |
-| `ips.txt` | Deduplicated IPv4 and IPv6 addresses |
-| `subnets.txt` | BGP prefixes found during enrichment |
-| `endpoints.csv` | Tabular domain/address or endpoint records |
+| File            | Contents                                                     |
+| --------------- | ------------------------------------------------------------ |
+| `report.json`   | Structured results, evidence, warnings and provider attempts |
+| `domains.txt`   | Deduplicated domain names                                    |
+| `ips.txt`       | Deduplicated IPv4 and IPv6 addresses                         |
+| `subnets.txt`   | BGP prefixes found during enrichment                         |
+| `endpoints.csv` | Tabular domain/address or endpoint records                   |
 
 Copy Domains and Copy IPs use the complete deduplicated report lists. They do
 not depend on the current table scroll position. The GUI provides horizontal

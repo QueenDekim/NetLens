@@ -27,7 +27,7 @@ def main():
         environment.pop('NETLENS_TSHARK',None)
         environment.pop('TCL_LIBRARY',None)
         environment.pop('TK_LIBRARY',None)
-        commands=[['scripts/verify_bundle.py'],['-m','unittest','discover','-s','tests','-v'],
+        commands=[['scripts/verify_bundle.py'],['scripts/check_docs.py'],['-m','unittest','discover','-s','tests','-v'],
                   ['-m','netlens','--help'],['-c','from pathlib import Path; import tkinter, _tkinter, dns, psutil; t=tkinter.Tcl(); assert Path(t.eval("info library")).resolve().is_relative_to(Path.cwd()); print(t.eval("info patchlevel"))']]
         for command in commands:
             subprocess.run([str(runtime),*command],cwd=workspace,env=environment,check=True,timeout=120)

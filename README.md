@@ -4,6 +4,13 @@ NetLens discovers domain names, IP addresses and BGP prefixes, and records the
 network destinations of a selected Windows application. It includes a Russian
 desktop interface and a command-line interface.
 
+<details>
+    <summary>Interface screenshots</summary>
+    <img src=".github/assets/1.png" width="640" />
+    <img src=".github/assets/2.png" width="640" />
+
+</details>
+
 ## Windows portable edition
 
 Download `NetLens-win-x64.zip` and its SHA-256 file from
@@ -57,7 +64,7 @@ source-based Windows capture, install TShark or set `NETLENS_TSHARK` to its path
 
 Read the [documentation](docs/README.md) for discovery, capture attribution,
 provider keys, export formats and portable builds. The
-[release workflow](.github/workflows/release.yml) builds and tests the Windows ZIP
+[release workflow](https://github.com/QueenDekim/NetLens/blob/main/.github/workflows/release.yml) builds and tests the Windows ZIP
 for a `v*` tag and uploads it to GitHub Releases. Manual runs produce build
 artifacts without creating a release.
 

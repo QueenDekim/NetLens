@@ -36,14 +36,14 @@ can hide names or weaken attribution.
 
 ## Evidence
 
-| Evidence | Interpretation |
-| --- | --- |
-| `socket_table` | A process socket had the remote address |
-| `tcp_tuple_sampled` | A packet matched a sampled TCP connection |
-| `udp_unique_bind_sampled` | A packet matched a UDP binding without a competing owner |
-| `tls_sni`, `http_host` | An attributed packet exposed a hostname |
-| `dns_query_on_process_socket` | The process queried a name through its own DNS socket |
-| `dns_candidates` | Nearby DNS traffic suggested a hostname for an observed IP |
+| Evidence                      | Interpretation                                             |
+| ----------------------------- | ---------------------------------------------------------- |
+| `socket_table`                | A process socket had the remote address                    |
+| `tcp_tuple_sampled`           | A packet matched a sampled TCP connection                  |
+| `udp_unique_bind_sampled`     | A packet matched a UDP binding without a competing owner   |
+| `tls_sni`, `http_host`        | An attributed packet exposed a hostname                    |
+| `dns_query_on_process_socket` | The process queried a name through its own DNS socket      |
+| `dns_candidates`              | Nearby DNS traffic suggested a hostname for an observed IP |
 
 An observed DNS query does not prove a connection to that name. A socket address
 does not prove that an application received a response. Retain the evidence
