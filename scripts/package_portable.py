@@ -27,7 +27,7 @@ def main():
         for path in sorted(folder.rglob('*')):
             if path.is_file() and '__pycache__' not in path.parts and path.suffix!='.pyc' and not (name=='netlens' and path.name=='_build.json'):
                 entries.append((path,'NetLens/'+name+'/'+path.relative_to(folder).as_posix()))
-    for name in ['VERSION','README.md','LICENSE','NOTICE','THIRD_PARTY_NOTICES.md','CONTRIBUTING.md','SECURITY.md','CHANGELOG.md','NetLens.cmd','Start-NetLens.ps1','requirements.txt']:
+    for name in ['VERSION','release-history.json','README.md','LICENSE','NOTICE','THIRD_PARTY_NOTICES.md','CONTRIBUTING.md','SECURITY.md','CHANGELOG.md','NetLens.cmd','Start-NetLens.ps1','requirements.txt']:
         entries.append((ROOT/name,'NetLens/'+name))
     entries.append((ROOT/'scripts/verify_bundle.py','NetLens/scripts/verify_bundle.py'))
     entries.append((ROOT/'scripts/check_docs.py','NetLens/scripts/check_docs.py'))

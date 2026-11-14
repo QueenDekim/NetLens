@@ -40,7 +40,7 @@ def main():
         environment.pop('SOURCE_REVISION',None)
         version=json.loads((workspace/'netlens/_build.json').read_text(encoding='utf-8'))
         actual=subprocess.check_output([str(runtime),'-m','netlens','--version'],cwd=workspace,env=environment,text=True).strip()
-        assert actual==version['version'] and version['version']=='1.0-'+version['revision'][:7]
+        assert actual==version['version'] and version['version']==(workspace/'VERSION').read_text().strip()+'-'+version['revision'][:7]
         for language,caption in [('en','IP addresses, subnets'),('ru','IP, подсети')]:
             output=subprocess.check_output([str(runtime),'-X','utf8','-m','netlens','--language',language,'--help'],cwd=workspace,env=environment,encoding='utf-8')
             assert caption in output, (language,output)

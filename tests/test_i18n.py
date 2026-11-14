@@ -57,8 +57,8 @@ class LocalizationTests(unittest.TestCase):
 
     def test_version_uses_this_repository_and_short_commit(self):
         info=build_info(revision='a'*40)
-        self.assertEqual(info['version'],'1.0-aaaaaaa')
-        self.assertEqual(info['url'],'https://github.com/QueenDekim/NetLens/tree/1.0-aaaaaaa')
+        self.assertEqual(info['version'],(ROOT/'VERSION').read_text().strip()+'-aaaaaaa')
+        self.assertEqual(info['url'],'https://github.com/QueenDekim/NetLens/tree/'+info['version'])
         with self.assertRaises(ValueError):build_info(revision='unsafe/ref')
 
     def test_git_metadata_supports_detached_head_and_submodule_files(self):
@@ -74,3 +74,14 @@ class LocalizationTests(unittest.TestCase):
             (git/'commondir').write_text('../common\n')
             (shared/'packed-refs').write_text('d'*40+' refs/heads/main\n')
             self.assertEqual(git_revision(worktree),'d'*40)
+
+    def test_historical_versions_and_independent_minor_versions(self):
+        entries=json.loads((ROOT/'release-history.json').read_text())['releases']
+        for entry in entries:self.assertEqual(build_info(entry['revision'])['tag'],entry['tag'])
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'VERSION').write_text('2.4.0\n')
+            self.assertEqual(build_info('a'*40,root=root)['version'],'2.4.0-aaaaaaa')
+            (root/'VERSION').write_text('2.5.0\n')
+            self.assertEqual(build_info('a'*40,root=root)['version'],'2.5.0-aaaaaaa')
+            (root/'VERSION').write_text('2.5')
+            with self.assertRaises(ValueError):build_info('a'*40,root=root)

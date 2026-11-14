@@ -22,3 +22,6 @@ package. Preserve dependency licenses and source references.
 
 Use one focused change per pull request and state the validation performed.
 Contributions use the project's Apache-2.0 license.
+
+For version changes and tags, follow [Releases](docs/releases.md). Bump minor
+for new capabilities and patch for fixes before publishing a release.

@@ -45,7 +45,7 @@ accounts.
 
 ## GitHub Releases
 
-Push a version tag such as `1.0-a1b2c3d` to run `.github/workflows/release.yml`. The
+Follow [Releases](releases.md), then push a version tag such as `1.1.3-a1b2c3d` to run `.github/workflows/release.yml`. The
 workflow tests the application, downloads pinned inputs, builds the runtime,
 packages the ZIP and tests the relocated archive. It publishes the ZIP,
 checksum and matching Wireshark source archive in the tag's release.

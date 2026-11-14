@@ -1,0 +1,36 @@
+{
+  "format": 1,
+  "repository": "QueenDekim/NetLens",
+  "releases": [
+    {
+      "version": "1.0.0",
+      "revision": "49f0d82fb21b066c1d483f3978c042e3d203733f",
+      "tag": "1.0.0-49f0d82",
+      "summary": "Standalone discovery and capture tool with a portable Windows release workflow."
+    },
+    {
+      "version": "1.0.1",
+      "revision": "1c544ecb6997690436163ca1d3cb2124920b1e0d",
+      "tag": "1.0.1-1c544ec",
+      "summary": "Include complete documentation in portable packages."
+    },
+    {
+      "version": "1.1.0",
+      "revision": "06179be9c638be211c31536fe2d9b88e0e9aa306",
+      "tag": "1.1.0-06179be",
+      "summary": "Russian and English interfaces, language selection and linked build versions."
+    },
+    {
+      "version": "1.1.1",
+      "revision": "b4e2295c47baa59c4f96373fec8333c0ae1fabbe",
+      "tag": "1.1.1-b4e2295",
+      "summary": "Report portable smoke failures in GitHub Actions annotations."
+    },
+    {
+      "version": "1.1.2",
+      "revision": "fe5b869b73af7be74449f067add7a5b37d572d78",
+      "tag": "1.1.2-fe5b869",
+      "summary": "Keep portable Tcl/Tk libraries inside the bundled interpreter."
+    }
+  ]
+}

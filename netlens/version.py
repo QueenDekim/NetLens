@@ -35,19 +35,26 @@ def git_revision(root):
         return None
 
 
-def build_info(revision=None, root=ROOT):
+def build_info(revision=None, root=ROOT, base_version=None):
     root = Path(root)
-    base = (root / 'VERSION').read_text(encoding='ascii').strip() if (root / 'VERSION').exists() else '1.0'
-    if not re.fullmatch(r'\d+\.\d+(?:\.\d+)?', base):
-        raise ValueError('Invalid base version')
+    source = (root / 'VERSION').read_text(encoding='ascii').strip() if (root / 'VERSION').exists() else '1.0.0'
     metadata = Path(__file__).with_name('_build.json')
+    cached = json.loads(metadata.read_text(encoding='utf-8')) if metadata.exists() else {}
     if revision is None:
-        revision = os.environ.get('SOURCE_REVISION')
-        if not revision and metadata.exists():
-            revision = json.loads(metadata.read_text(encoding='utf-8')).get('revision')
-        revision = revision or git_revision(root)
+        revision = os.environ.get('SOURCE_REVISION') or cached.get('revision') or git_revision(root)
     if revision and not re.fullmatch(r'[0-9a-f]{7,64}', revision):
         raise ValueError('Invalid source revision')
+    history = root / 'release-history.json'
+    releases = json.loads(history.read_text(encoding='utf-8'))['releases'] if history.exists() else []
+    matches = [entry for entry in releases if revision and entry['revision'].startswith(revision)]
+    if len(matches)>1:
+        raise ValueError('Ambiguous source revision')
+    base = base_version or (matches[0]['version'] if matches else None)
+    if not base and revision and revision == cached.get('revision'):
+        base = cached.get('base_version')
+    base = base or source
+    if not re.fullmatch(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)', base):
+        raise ValueError('Invalid base version; expected MAJOR.MINOR.PATCH')
     version = base + '-' + (revision[:7] if revision else 'unknown')
-    return {'version':version, 'revision':revision, 'tag':version if revision else None,
+    return {'base_version':base, 'version':version, 'revision':revision, 'tag':version if revision else None,
             'url':REPOSITORY + ('/tree/' + version if revision else '/tags')}

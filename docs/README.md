@@ -10,3 +10,5 @@
 
 Use `python -m netlens --help` for available commands. The portable launcher
 accepts the same arguments as the Python module.
+
+See [Releases](releases.md) for version numbers, tag checks and publication.
