@@ -226,11 +226,13 @@ def discover(root, limit=200, include_related=False, use_ct=True, networks=True,
              log=lambda _: None, cancel=None, ct_provider='auto', ct_fallback=True, api_keys=None,
              follow_redirects=True):
     input_domain = domain_name(root)
-    root = registrable_domain(input_domain) if use_ct else input_domain
+    # A PRIVATE suffix is a hosted-tenant boundary, not the parent search scope.
+    root = registrable_domain(input_domain, include_private=False) if use_ct else input_domain
     if not 1 <= limit <= 5000:
         raise ValueError(tr('Лимит доменов должен быть от 1 до 5000.'))
     report = {'kind': 'discovery', 'created_at': utcnow(), 'root': root,
-              'input_domain': input_domain, 'scope_expanded': root != input_domain, 'warnings': []}
+              'input_domain': input_domain, 'scope_expanded': root != input_domain,
+              'root_policy': 'psl_icann' if use_ct else 'input', 'warnings': []}
     if root != input_domain:
         log(tr('Поиск субдоменов: {0} → {1}', input_domain, root))
     found, related = {root: {'input'}}, {}
@@ -238,7 +240,7 @@ def discover(root, limit=200, include_related=False, use_ct=True, networks=True,
     if follow_redirects:
         seeds = list(dict.fromkeys([input_domain, root]))
         try:
-            root_is_registrable = root == registrable_domain(root)
+            root_is_registrable = root == registrable_domain(root, include_private=False)
         except ValueError:
             root_is_registrable = False
         if root_is_registrable and not root.startswith('www.'):
@@ -249,7 +251,7 @@ def discover(root, limit=200, include_related=False, use_ct=True, networks=True,
         redirect_domains.update(report['redirects']['domains'])
         for name in sorted(redirect_domains):
             try:
-                redirect_root = registrable_domain(name) if use_ct else name
+                redirect_root = registrable_domain(name, include_private=False) if use_ct else name
             except ValueError:
                 continue
             if redirect_root != root:

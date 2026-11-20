@@ -7,12 +7,14 @@ PSL_PATH = Path(__file__).resolve().parent.parent / 'third-party/public-suffix/p
 
 
 @cache
-def rules():
+def rules(include_private=True):
     text = PSL_PATH.read_text(encoding='utf-8')
     if '===BEGIN ICANN DOMAINS===' not in text or '===BEGIN PRIVATE DOMAINS===' not in text:
         raise ValueError(tr('Повреждён комплект Public Suffix List.'))
     exact, wildcard, exception = set(), set(), set()
     for line in text.splitlines():
+        if not include_private and '===BEGIN PRIVATE DOMAINS===' in line:
+            break
         rule = line.split('//', 1)[0].strip()
         if not rule:
             continue
@@ -25,9 +27,9 @@ def rules():
     return exact, wildcard, exception
 
 
-def registrable_domain(name):
-    """Accept a validated ASCII domain. PRIVATE rules preserve hosted tenants."""
-    exact, wildcard, exception = rules()
+def registrable_domain(name, include_private=True):
+    """Use ICANN boundaries for search, optional PRIVATE boundaries for tenants."""
+    exact, wildcard, exception = rules(include_private)
     labels = name.split('.')
     suffix_length = 1  # PSL's implicit wildcard for unknown TLDs.
     for index in range(len(labels)):

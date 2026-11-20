@@ -15,6 +15,47 @@ from netlens.suffixes import registrable_domain
 
 
 class DiscoveryTests(unittest.TestCase):
+    def test_search_roots_ignore_private_hosting_boundaries(self):
+        examples = {
+            'googleapis.com': 'googleapis.com',
+            'oauth2.googleapis.com': 'googleapis.com',
+            'www.googleapis.com': 'googleapis.com',
+            'a.b.googleapis.com': 'googleapis.com',
+            'www.project.github.io': 'github.io',
+            'a.b.example.co.uk': 'example.co.uk',
+            'a.www.ck': 'www.ck',
+        }
+        for given, expected in examples.items():
+            with self.subTest(domain=given):
+                self.assertEqual(registrable_domain(given, include_private=False), expected)
+        for suffix in ('co.uk', 'a.ck'):
+            with self.subTest(domain=suffix), self.assertRaises(ValueError):
+                registrable_domain(suffix, include_private=False)
+
+    @patch('netlens.discovery.resolve_name', side_effect=lambda n: {'domain': n, 'ips': [], 'cnames': [], 'errors': []})
+    @patch('netlens.ct.search_certificates', return_value=([
+        {'match': 'oauth2.googleapis.com'}, {'match': 'www.googleapis.com'},
+        {'match': 'storage.googleapis.com'}], {}, []))
+    def test_googleapis_apex_and_subdomains_search_same_root(self, provider, resolve):
+        expected = {'googleapis.com', 'oauth2.googleapis.com', 'www.googleapis.com', 'storage.googleapis.com'}
+        for name in ('googleapis.com', 'oauth2.googleapis.com', 'www.googleapis.com'):
+            with self.subTest(domain=name):
+                report = discover(name, networks=False, follow_redirects=False)
+                self.assertEqual(report['root'], 'googleapis.com')
+                self.assertEqual(report['root_policy'], 'psl_icann')
+                self.assertEqual(provider.call_args.args[0], 'googleapis.com')
+                self.assertEqual({d['domain'] for d in report['domains']}, expected)
+
+    @patch('netlens.discovery.resolve_name', side_effect=lambda n: {'domain': n, 'ips': [], 'cnames': [], 'errors': []})
+    @patch('netlens.discovery.trace_redirects', return_value={
+        'domains': ['oauth2.googleapis.com'], 'ips': [], 'chains': [],
+        'requests': 1, 'partial': False, 'warnings': []})
+    @patch('netlens.ct.search_certificates', return_value=([], {}, []))
+    def test_redirect_search_uses_same_icann_root_policy(self, provider, trace, resolve):
+        report = discover('example.com', networks=False)
+        self.assertEqual(report['redirect_roots'], ['googleapis.com'])
+        self.assertEqual([c.args[0] for c in provider.call_args_list], ['example.com', 'googleapis.com'])
+
     def test_registrable_domains_from_bundled_psl(self):
         examples = {
             'www.youtube.com': 'youtube.com',

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.4
+
+- Use ICANN registry boundaries for CT search roots, allowing parent domains such
+  as googleapis.com and expanding their subdomains to the same search scope.
+
 ## 1.1.3
 
 - Use feature-based minor versions and patch versions for fixes.
